@@ -37,5 +37,4 @@ def hash_sum(data=parser()):
 
 
 if __name__ == '__main__':
-    pass
     collection.find_one_and_update({'url': URL}, {'$set': {'hash_sum': hash_sum()}}, upsert=True)
