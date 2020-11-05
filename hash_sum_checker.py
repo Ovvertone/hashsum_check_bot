@@ -40,10 +40,7 @@ def check_hash_sum(hash_sum=hash_sum()):
         old_hash_sum = collection.find_one({'url': URL})['hash_sum']
         collection.update_one({'url': URL}, {'$set': {'hash_sum': hash_sum}})
         new_hash_sum = collection.find_one({'url': URL})['hash_sum']
-        if old_hash_sum == new_hash_sum:
-            print('HTML code hasn\'t changed')
-        else:
-            print('HTML code has changed!')
+        print('HTML code hasn\'t changed') if old_hash_sum == new_hash_sum else print('HTML code has changed!')
     except TypeError:
         collection.insert_one({
             'url': URL,
