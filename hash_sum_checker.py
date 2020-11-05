@@ -36,5 +36,23 @@ def hash_sum(data=parser()):
     return hash_alg.hexdigest()
 
 
+def check_hash_sum(hash_sum=hash_sum()):
+    try:
+        old_hash_sum = collection.find_one({'url': URL})['hash_sum']
+        collection.update_one({'url': URL}, {'$set': {'hash_sum': hash_sum}})
+        new_hash_sum = collection.find_one({'url': URL})['hash_sum']
+        if old_hash_sum == new_hash_sum:
+            print('HTML code hasn\'t changed')
+        else:
+            print('HTML code has changed!')
+    except TypeError:
+        collection.insert_one({
+            'url': URL,
+            'hash_sum': hash_sum,
+        })
+        print('Hash sum has been added to the database')
+    return
+
+
 if __name__ == '__main__':
-    collection.find_one_and_update({'url': URL}, {'$set': {'hash_sum': hash_sum()}}, upsert=True)
+    check_hash_sum()
