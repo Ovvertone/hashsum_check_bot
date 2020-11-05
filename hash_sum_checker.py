@@ -1,25 +1,39 @@
+from requests.exceptions import ConnectionError
+from pymongo.errors import ConfigurationError
+from pymongo import MongoClient
 from bs4 import BeautifulSoup
+from sys import argv, exit
 from hashlib import md5
-from os.path import abspath
+from os import environ
 import requests
-import sys
+import lxml
 
-FILENAME = abspath('data1.html')
+try:
+    URL = argv[1]
+except IndexError:
+    exit('Missing url')
+
+try:
+    cluster = MongoClient(environ.get('MONGO_PW'))
+    db = cluster['hash_sum']
+    collection = db['url_hash']
+except ConfigurationError:
+    exit('No internet connection')
 
 
-def parser(url):
-    return str(BeautifulSoup(requests.get(url=url).content, 'html.parser'))
+def parser(url=URL):
+    try:
+        return BeautifulSoup(requests.get(url).content, 'lxml')
+    except ConnectionError:
+        exit('Invalid url')
 
 
-def hash_sum(filename=FILENAME):
+def hash_sum():
     hash_alg = md5()
-    with open(filename, 'rb') as file:
-        for chunk in iter(lambda: file.read(4096), b''):
-            hash_alg.update(chunk)
+    for tag in parser():
+        hash_alg.update(tag.encode())
     return hash_alg.hexdigest()
 
 
 if __name__ == '__main__':
-    with open(FILENAME, 'w') as file:
-        file.write(parser(sys.argv[1]))
-    print(hash_sum())
+    collection.find_one_and_update({'url': URL}, {'$set': {'hash_sum': hash_sum()}}, upsert=True)
