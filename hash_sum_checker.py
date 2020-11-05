@@ -26,13 +26,12 @@ def parser(url=URL):
         soup = BeautifulSoup(requests.get(url).content, 'lxml')
     except ConnectionError:
         exit('Invalid url')
-    return [str(tag) for tag in soup('a')]
+    return [str(tag) for tag in soup('html')]
 
 
 def hash_sum(data=parser()):
     hash_alg = md5()
-    for tag in data:
-        hash_alg.update(tag.encode())
+    [hash_alg.update(tag.encode()) for tag in data]
     return hash_alg.hexdigest()
 
 
