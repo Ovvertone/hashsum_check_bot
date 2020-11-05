@@ -26,13 +26,19 @@ def parser(url=URL):
         soup = BeautifulSoup(requests.get(url).content, 'lxml')
     except ConnectionError:
         exit('Invalid url')
-    return [str(tag) for tag in soup('html')]
+    return [tag for tag in soup.descendants if tag.name and len(tag.contents) == 0]
 
 
-def hash_sum(data=parser()):
+def hash_sum(content=parser()):
     hash_alg = md5()
-    [hash_alg.update(tag.encode()) for tag in data]
-    return hash_alg.hexdigest()
+    hash_sum_list = []
+    for tag in content:
+        hash_alg.update(tag.encode())
+        hash_sum_list.append({
+            'tag': tag.name,
+            'tag_hash_sum': hash_alg.hexdigest(),
+        })
+    return hash_sum_list
 
 
 def check_hash_sum(hash_sum=hash_sum()):
