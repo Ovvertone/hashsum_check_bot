@@ -1,5 +1,6 @@
+from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 from requests.exceptions import ConnectionError
-from pymongo.errors import ConfigurationError
+from collections import Counter
 from pymongo import MongoClient
 from bs4 import BeautifulSoup
 from sys import argv, exit
@@ -43,16 +44,21 @@ def hash_sum(content=parser()):
 
 def check_hash_sum(hash_sum=hash_sum()):
     try:
-        old_hash_sum = collection.find_one({'url': URL})['hash_sum']
-        collection.update_one({'url': URL}, {'$set': {'hash_sum': hash_sum}})
-        new_hash_sum = collection.find_one({'url': URL})['hash_sum']
-        print('HTML code hasn\'t changed') if old_hash_sum == new_hash_sum else print('HTML code has changed!')
+        old_hs_list = collection.find_one({'url': URL})['hash_sum_list']
+        collection.update_one({'url': URL}, {'$set': {'hash_sum_list': hash_sum}})
+        new_hs_list = collection.find_one({'url': URL})['hash_sum_list']
+        diff = []
+        [diff.append(new_hs['tag']) for old_hs, new_hs in zip(old_hs_list, new_hs_list) if old_hs != new_hs]
+        diff_count = Counter(diff)
+        print('HTML code hasn\'t changed') if diff == [] else print('The following tags have changed:', diff_count)
     except TypeError:
         collection.insert_one({
             'url': URL,
-            'hash_sum': hash_sum,
+            'hash_sum_list': hash_sum,
         })
         print('Hash sum has been added to the database')
+    except ServerSelectionTimeoutError:
+        exit('Error connecting to database')
     return
 
 
