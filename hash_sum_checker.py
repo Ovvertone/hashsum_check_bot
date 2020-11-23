@@ -1,14 +1,14 @@
+from collections import Counter
 from os import environ
 from sys import argv, exit
 
 from bs4 import BeautifulSoup
-from collections import Counter
+from hashlib import md5
 import lxml
 from pymongo import MongoClient
 from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 import requests
 from requests.exceptions import ConnectionError
-from hashlib import md5
 
 try:
     URL = argv[1]
