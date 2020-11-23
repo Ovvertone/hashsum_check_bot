@@ -10,31 +10,23 @@ from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 import requests
 from requests.exceptions import ConnectionError
 
-try:
-    URL = argv[1]
-except IndexError:
-    exit('Missing url')
-
-try:
-    cluster = MongoClient(environ.get('MONGO_PW'))
-    db = cluster['hash_sum']
-    collection = db['url_hash']
-except ConfigurationError:
-    exit('No internet connection')
+cluster = MongoClient(environ.get('MONGO_PW'))
+db = cluster['hash_sum']
+collection = db['url_hash']
 
 
-def parser(url=URL):
+def parser(url):
     try:
         soup = BeautifulSoup(requests.get(url).content, 'lxml')
     except ConnectionError:
-        exit('Invalid url')
+        return 'Invalid url'
     return [tag for tag in soup.descendants if tag.name and len(tag.contents) == 0]
 
 
-def hash_sum(content=parser()):
+def hash_sum(url, parser=parser):
     hash_alg = md5()
     hash_sum_list = []
-    for tag in content:
+    for tag in parser(url):
         hash_alg.update(tag.encode())
         hash_sum_list.append({
             'tag': tag.name,
@@ -43,25 +35,20 @@ def hash_sum(content=parser()):
     return hash_sum_list
 
 
-def check_hash_sum(hash_sum=hash_sum()):
+def check_hash_sum(url, hash_sum=hash_sum):
     try:
-        old_hs_list = collection.find_one({'url': URL})['hash_sum_list']
-        collection.update_one({'url': URL}, {'$set': {'hash_sum_list': hash_sum}})
-        new_hs_list = collection.find_one({'url': URL})['hash_sum_list']
+        old_hs_list = collection.find_one({'url': url})['hash_sum_list']
+        collection.update_one({'url': url}, {'$set': {'hash_sum_list': hash_sum(url)}})
+        new_hs_list = collection.find_one({'url': url})['hash_sum_list']
         diff = []
         [diff.append(new_hs['tag']) for old_hs, new_hs in zip(old_hs_list, new_hs_list) if old_hs != new_hs]
-        diff_count = Counter(diff)
-        print('HTML code hasn\'t changed') if diff == [] else print('The following tags have changed:', diff_count)
+        diff_count = Counter(diff).most_common()
+        return 'HTML code hasn\'t changed' if diff == [] else ('The following tags have changed:', *diff_count)
     except TypeError:
         collection.insert_one({
-            'url': URL,
+            'url': url,
             'hash_sum_list': hash_sum,
         })
-        print('Hash sum has been added to the database')
+        return 'Hash sum has been added to the database'
     except ServerSelectionTimeoutError:
-        exit('Error connecting to database')
-    return
-
-
-if __name__ == '__main__':
-    check_hash_sum()
+        return 'Error connecting to database'
