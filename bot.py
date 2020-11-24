@@ -2,7 +2,7 @@ import telebot
 
 from hash_sum_checker import check_hash_sum
 
-bot = telebot.TeleBot('1408332480:AAGiZrfqhIXzCemZ30ZvrmwSOeJnee5Zyb0')
+bot = telebot.TeleBot('SECRET_KEY')
 
 
 @bot.message_handler(commands=['start'])
