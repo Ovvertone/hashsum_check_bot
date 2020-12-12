@@ -1,8 +1,8 @@
 from collections import Counter
+from hashlib import md5
 from os import environ
 
 from bs4 import BeautifulSoup
-from hashlib import md5
 import lxml
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
